@@ -61,9 +61,12 @@ async function fetchQleverBackend(params, additionalHeaders = {}) {
     ...additionalHeaders
   };
   
-  // Add JWT token if available
+  // Check if current backend requires authentication
+  const currentBackend = window.currentBackend;
   const accessToken = localStorage.getItem('access_token');
-  if (accessToken) {
+  
+  // Only add JWT token if backend requires auth AND token is available
+  if (currentBackend && currentBackend.requiresAuth && accessToken) {
     headers['Authorization'] = `Bearer ${accessToken}`;
   }
   

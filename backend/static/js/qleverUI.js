@@ -715,11 +715,12 @@ async function processQuery(sendLimit=0, element=$("#exebtn")) {
           let mapViewUrlVanilla = 'http://qlever.cs.uni-freiburg.de/mapui/index.html?';
           let params = new URLSearchParams({query: normalizeQuery(query), backend: BASEURL});
           
-          // Get JWT token from localStorage for authenticated map requests
+          // Check if current backend requires authentication
+          const currentBackend = window.currentBackend;
           const accessToken = localStorage.getItem('access_token');
           
-          if (accessToken) {
-            // Authenticated: Route through Django proxy with JWT token
+          if (currentBackend && currentBackend.requiresAuth && accessToken) {
+            // Backend requires auth and we have token: Route through Django proxy
             const originalMapUrl = `${MAP_VIEW_BASE_URL}/?${params}`;
             
             // Pass both the map URL and JWT token to the Django proxy
@@ -727,7 +728,7 @@ async function processQuery(sendLimit=0, element=$("#exebtn")) {
             
             mapViewButtonPetri = `<a class="btn btn-default" href="${proxyUrl}" target="_blank"><i class="glyphicon glyphicon-map-marker"></i> Map view</a>`;
           } else {
-            // Non-authenticated fallback - direct links as before
+            // Backend doesn't require auth or no token available - direct links
             mapViewButtonVanilla = `<a class="btn btn-default" href="${mapViewUrlVanilla}${params}" target="_blank"><i class="glyphicon glyphicon-map-marker"></i> Map view</a>`;
             mapViewButtonPetri = `<a class="btn btn-default" href="${MAP_VIEW_BASE_URL}/?${params}" target="_blank"><i class="glyphicon glyphicon-map-marker"></i> Map view</a>`;
           }

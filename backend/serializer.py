@@ -11,7 +11,7 @@ class BackendListSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = Backend
-        fields = ["name", "slug", "url"]
+        fields = ["name", "slug", "url", "requiresAuth"]
         extra_kwargs = {
             "url": {"view_name": "backend-detail", "lookup_field": "slug"}
         }

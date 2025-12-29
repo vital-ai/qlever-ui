@@ -46,6 +46,12 @@ class Backend(models.Model):
         blank=True,
     )
 
+    requiresAuth = models.BooleanField(
+        default=False,
+        help_text="Check if this backend requires JWT authentication in request headers",
+        verbose_name="Requires Authentication",
+    )
+
     isDefault = models.BooleanField(
         default=0,
         help_text="Check if this should be the default backend for the QLever UI",

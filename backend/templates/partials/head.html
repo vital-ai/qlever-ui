@@ -67,6 +67,14 @@
   examples.push(`{{ example.query|addslashes|safe }}`);
   {% endfor %}
   var MAP_VIEW_BASE_URL = "{{ backend.mapViewBaseURL }}";
+  
+  // Current backend configuration for authentication decisions
+  window.currentBackend = {
+    name: "{{ backend.name|escapejs }}",
+    slug: "{{ backend.slug|escapejs }}",
+    baseUrl: "{{ backend.baseUrl|escapejs }}",
+    requiresAuth: {{ backend.requiresAuth|yesno:"true,false" }}
+  };
   </script>
 
   <!-- Bootstraps JavaScript -->
