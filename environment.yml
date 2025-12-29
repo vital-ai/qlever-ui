@@ -1,0 +1,24 @@
+name: qlever-ui
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.12
+  - pip
+  - pip:
+    # Core Django dependencies
+    - django==5.0.3
+    - django-environ==0.11.2
+    - django-filter>=25.1
+    - django-import-export==3.3.7
+    - djangorestframework>=3.16.1
+    - gunicorn==22.0.0
+    - markdown>=3.9
+    - requests==2.32.0
+    - whitenoise[brotli]==6.6.0
+    
+    # JWT verification dependencies
+    - PyJWT[crypto]==2.8.0
+    
+    # Development dependencies (optional)
+    - ruff  # For linting and formatting

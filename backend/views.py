@@ -3,9 +3,11 @@ import json
 import random
 import string
 import urllib
+import urllib.parse
+import requests
 
 from django.http import JsonResponse
-from django.http.response import HttpResponse, HttpResponseForbidden
+from django.http.response import HttpResponse, HttpResponseForbidden, HttpResponseBadRequest, HttpResponseServerError
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, mixins, viewsets
@@ -16,8 +18,12 @@ from backend.management.commands.prefixes import Command as PrefixesCommand
 from backend.management.commands.warmup import Command as WarmupCommand
 from backend.serializer import BackendDetailSerializer, BackendListSerializer
 
-# from django.contrib.auth.decorators import login_required
 from .models import *
+
+
+def auth_callback(request):
+    """Handle OIDC authentication callback"""
+    return render(request, "auth_callback.html")
 
 
 def index(request, backend=None, short=None):
@@ -107,6 +113,9 @@ def index(request, backend=None, short=None):
     elif request.GET.get("query") is not None:
         prefill = request.GET["query"]
 
+    # With frontend OIDC, authentication is handled by frontend
+    backend_requires_auth = False
+
     return render(
         request,
         "index.html",
@@ -119,6 +128,8 @@ def index(request, backend=None, short=None):
             "backends": Backend.objects.all(),
             "examples": examples,
             "prefill": prefill,
+            "user_authenticated": request.user.is_authenticated,
+            "backend_requires_auth": backend_requires_auth,
         },
     )
 
@@ -264,6 +275,52 @@ def config(request, backend):
     except Exception as e:
         return HttpResponse("Error: " + str(e), status=500)
     return HttpResponse(config_yaml, content_type="text/yaml")
+
+
+
+
+def map_proxy(request):
+    """Server-side proxy that fetches map content with JWT authentication"""
+    # Get the full map URL from the request parameter
+    map_url = request.GET.get('url') or request.path_info.replace('/map?', '', 1)
+    
+    if not map_url:
+        return HttpResponseBadRequest("Map URL parameter required")
+    
+    # Decode URL if it was encoded
+    if map_url.startswith('http'):
+        map_url = urllib.parse.unquote(map_url)
+    
+    # Get JWT token from request parameter (passed by frontend)
+    access_token = request.GET.get('token')
+    if not access_token:
+        return HttpResponseBadRequest("JWT token parameter required")
+    
+    # Make authenticated request to map service
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'User-Agent': request.META.get('HTTP_USER_AGENT', 'QLever-UI-Proxy/1.0'),
+    }
+    
+    try:
+        response = requests.get(map_url, headers=headers, timeout=30, stream=True)
+        
+        # Return the map service response
+        django_response = HttpResponse(
+            response.content,
+            status=response.status_code,
+            content_type=response.headers.get('content-type', 'text/html')
+        )
+        
+        # Copy important headers
+        for header_name in ['Content-Type', 'Cache-Control', 'Expires']:
+            if header_name in response.headers:
+                django_response[header_name] = response.headers[header_name]
+        
+        return django_response
+        
+    except requests.RequestException as e:
+        return HttpResponseServerError(f"Error proxying map service: {str(e)}")
 
 
 # Helpers

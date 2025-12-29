@@ -54,15 +54,34 @@ function closeWebSocket(ws) {
 // errors with user-friendly error messages.
 async function fetchQleverBackend(params, additionalHeaders = {}) {
   let response;
+  
+  // Get JWT token from localStorage (set by frontend OIDC)
+  let headers = {
+    Accept: "application/qlever-results+json",
+    ...additionalHeaders
+  };
+  
+  // Add JWT token if available
+  const accessToken = localStorage.getItem('access_token');
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+  
   try {
     response = await fetch(BASEURL, {
       method: "POST",
       body: new URLSearchParams(params),
-      headers: {
-        Accept: "application/qlever-results+json",
-        ...additionalHeaders
-      },
+      headers: headers,
     });
+    
+    // Handle 401/403 - user needs to authenticate
+    if (response.status === 401 || response.status === 403) {
+      // Clear invalid token and redirect to login
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('id_token');
+      window.location.href = getKeycloakLoginUrl();
+      throw new Error('Authentication required - redirecting to login');
+    }
   } catch (error) {
     throw new Error(`Cannot reach ${BASEURL}. The most common cause is that the QLever server is down. Please try again later and contact us if the error persists`);
   }

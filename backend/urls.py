@@ -33,4 +33,6 @@ urlpatterns = [
         r"^api/prefixes/(?P<backend>[^/]+)$", views.prefixes, name="prefixes"
     ),
     re_path(r"^api/config/(?P<backend>[^/]+)$", views.config, name="config"),
+    path('auth/callback', views.auth_callback, name='auth_callback'),
+    re_path(r'^map\?(.*)$', views.map_proxy, name='map_proxy'),
 ]
